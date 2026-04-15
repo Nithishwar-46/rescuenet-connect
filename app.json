@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "RescueNet Pro",
+    "slug": "rescuenet",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "icon": "./rescuenet_pro_blue_icon_1775977826564.png",
+    "scheme": "rescuenet",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nithishwar.rescuenetpro"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#007AFF",
+        "foregroundImage": "./rescuenet_pro_blue_icon_1775977826564.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.nithishwar.rescuenetpro",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET"
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./rescuenet_pro_blue_icon_1775977826564.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-location",
+      "expo-image-picker",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./rescuenet_pro_blue_icon_1775977826564.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "633c39f9-b930-4a83-a3d7-678d27c0a8d0"
+      }
+    }
+  }
+}
