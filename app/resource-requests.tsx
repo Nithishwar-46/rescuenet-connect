@@ -7,6 +7,7 @@ import { useToast } from '@/lib/toast-provider';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Location from 'expo-location';
+import { TacticalButton } from '@/components/ui/tactical-button';
 
 type ResourceRequest = {
   id: string;
@@ -162,18 +163,22 @@ export default function ResourceRequestsScreen() {
 
         {isPending && !item.isMyRequest && (
           <View style={styles.actionRow}>
-            <TouchableOpacity 
-              style={[styles.actionBtn, { backgroundColor: colors.border }]} 
-              onPress={() => handleStatusUpdate(item.id, 'denied')}
-            >
-              <Text style={[styles.actionBtnText, { color: colors.text }]}>DENY</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.actionBtn, { backgroundColor: colors.primary }]} 
-              onPress={() => handleStatusUpdate(item.id, 'approved')}
-            >
-              <Text style={styles.actionBtnText}>APPROVE</Text>
-            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <TacticalButton
+                title="DENY"
+                onPress={() => handleStatusUpdate(item.id, 'denied')}
+                colors={['#1a1a1a', '#000000']}
+                style={{ height: '100%' }}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <TacticalButton
+                title="APPROVE"
+                onPress={() => handleStatusUpdate(item.id, 'approved')}
+                colors={[colors.primary, '#005bb5']}
+                style={{ height: '100%' }}
+              />
+            </View>
           </View>
         )}
         
@@ -239,8 +244,6 @@ const styles = StyleSheet.create({
   intelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   senderName: { fontSize: 12, fontWeight: '700', marginLeft: 6 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  actionBtn: { flex: 1, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  actionBtnText: { color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
   badgeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
   statusBadgeText: { fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },

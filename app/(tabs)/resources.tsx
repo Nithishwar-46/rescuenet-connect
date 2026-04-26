@@ -6,6 +6,7 @@ import { useTheme } from '@/lib/theme-context';
 import { useToast } from '@/lib/toast-provider';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
+import { TacticalButton } from '@/components/ui/tactical-button';
 
 type ResourceCategory = 'Medical' | 'Fuel' | 'Vehicle' | 'Food' | 'Water' | 'Power';
 
@@ -17,12 +18,14 @@ interface Resource {
   unit: string;
   status: 'Available' | 'Low' | 'Critical';
   last_updated_by: string;
+  agency_name?: string;
   updated_at: string;
 }
 
 export default function ResourcesScreen() {
   const { colors } = useTheme();
-  const { userId, role } = useAuth();
+  const { userId, role, profile: authProfile } = useAuth();
+  const userAgency = (authProfile as any)?.agency_name || 'Independent';
   const { showToast } = useToast();
   
   const [resources, setResources] = useState<Resource[]>([]);
@@ -30,6 +33,7 @@ export default function ResourcesScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingResource, setEditingResource] = useState<Partial<Resource> | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<ResourceCategory | 'All'>('All');
+  const [useMock, setUseMock] = useState(false);
 
   const categories: ResourceCategory[] = ['Medical', 'Fuel', 'Vehicle', 'Food', 'Water', 'Power'];
 
@@ -38,13 +42,16 @@ export default function ResourcesScreen() {
     const { data, error } = await supabase.from('resources').select('*').order('name');
     if (error) {
       // If table doesn't exist, we'll use mock data for demonstration
-      if (error.code === '42P01') {
-        setResources(getMockResources());
+      if (error.code === '42P01' || error.message.includes('column')) {
+        setUseMock(true);
+        setResources(getMockResources().filter(r => !r.agency_name || r.agency_name === userAgency));
       } else {
         showToast({ message: error.message, type: 'CRITICAL' });
       }
     } else {
-      setResources(data as Resource[]);
+      // Filter to only show resources belonging to the user's agency
+      const filtered = (data as any[]).filter(r => !r.agency_name || r.agency_name === userAgency);
+      setResources(filtered as Resource[]);
     }
     setLoading(false);
   };
@@ -61,21 +68,36 @@ export default function ResourcesScreen() {
   }, []);
 
   const getMockResources = (): Resource[] => [
-    { id: '1', name: 'Trauma Kits', category: 'Medical', quantity: 45, unit: 'units', status: 'Available', last_updated_by: 'Admin', updated_at: new Date().toISOString() },
-    { id: '2', name: 'Diesel Fuel', category: 'Fuel', quantity: 120, unit: 'liters', status: 'Low', last_updated_by: 'Admin', updated_at: new Date().toISOString() },
-    { id: '3', name: 'Ambulance Unit 04', category: 'Vehicle', quantity: 1, unit: 'unit', status: 'Available', last_updated_by: 'Admin', updated_at: new Date().toISOString() },
-    { id: '4', name: 'Emergency Rations', category: 'Food', quantity: 500, unit: 'packs', status: 'Available', last_updated_by: 'Admin', updated_at: new Date().toISOString() },
-    { id: '5', name: 'Potable Water', category: 'Water', quantity: 50, unit: 'cans', status: 'Critical', last_updated_by: 'Admin', updated_at: new Date().toISOString() },
+    { id: '1', name: 'Trauma Kits', category: 'Medical', quantity: 45, unit: 'units', status: 'Available', last_updated_by: 'Admin', agency_name: userAgency, updated_at: new Date().toISOString() },
+    { id: '2', name: 'Diesel Fuel', category: 'Fuel', quantity: 120, unit: 'liters', status: 'Low', last_updated_by: 'Admin', agency_name: userAgency, updated_at: new Date().toISOString() },
+    { id: '3', name: 'Ambulance Unit 04', category: 'Vehicle', quantity: 1, unit: 'unit', status: 'Available', last_updated_by: 'Admin', agency_name: userAgency, updated_at: new Date().toISOString() },
+    { id: '4', name: 'Emergency Rations', category: 'Food', quantity: 500, unit: 'packs', status: 'Available', last_updated_by: 'Admin', agency_name: userAgency, updated_at: new Date().toISOString() },
+    { id: '5', name: 'Potable Water', category: 'Water', quantity: 50, unit: 'cans', status: 'Critical', last_updated_by: 'Admin', agency_name: userAgency, updated_at: new Date().toISOString() },
   ];
 
   const handleUpdate = async () => {
     if (!editingResource?.name || editingResource.quantity === undefined) return;
 
+    if (useMock) {
+        if (editingResource.id) {
+           setResources(prev => prev.map(r => r.id === editingResource.id ? { ...r, ...editingResource, last_updated_by: userId || 'Admin', agency_name: userAgency, updated_at: new Date().toISOString() } as Resource : r));
+           showToast({ message: "Asset inventory updated (Local Demo).", type: 'SUCCESS' });
+        } else {
+           const newId = Date.now().toString();
+           setResources(prev => [...prev, { ...editingResource, id: newId, last_updated_by: userId || 'Admin', agency_name: userAgency, updated_at: new Date().toISOString() } as Resource]);
+           showToast({ message: "New asset registered (Local Demo).", type: 'SUCCESS' });
+        }
+        setModalVisible(false);
+        setEditingResource(null);
+        return;
+    }
+
     if (editingResource.id) {
        // Update existing
-       const { error } = await supabase.from('resources').update({
+        const { error } = await supabase.from('resources').update({
          ...editingResource,
          last_updated_by: userId,
+         agency_name: userAgency,
          updated_at: new Date().toISOString()
        }).eq('id', editingResource.id);
        
@@ -86,6 +108,7 @@ export default function ResourcesScreen() {
        const { error } = await supabase.from('resources').insert([{
          ...editingResource,
          last_updated_by: userId,
+         agency_name: userAgency,
          updated_at: new Date().toISOString()
        }]);
        
@@ -236,9 +259,14 @@ export default function ResourcesScreen() {
                  <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
                     <Text style={[styles.cancelButtonText, { color: colors.secondary }]}>CANCEL</Text>
                  </TouchableOpacity>
-                 <TouchableOpacity style={[styles.saveButtonModal, { backgroundColor: colors.primary }]} onPress={handleUpdate}>
-                    <Text style={styles.saveButtonTextModal}>SYNCHRONIZE</Text>
-                 </TouchableOpacity>
+                 <View style={{ flex: 1 }}>
+                   <TacticalButton
+                     title="SYNCHRONIZE"
+                     onPress={handleUpdate}
+                     colors={[colors.primary, colors.text]}
+                     style={{ width: '100%' }}
+                   />
+                 </View>
               </View>
            </View>
         </View>
@@ -281,8 +309,6 @@ const styles = StyleSheet.create({
   statusOption: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)', marginRight: 5 },
   statusOptionText: { fontSize: 10, fontWeight: '900' },
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
-  cancelButton: { flex: 1, padding: 18, alignItems: 'center' },
-  cancelButtonText: { fontWeight: '900' },
-  saveButtonModal: { flex: 1, padding: 18, borderRadius: 14, alignItems: 'center' },
-  saveButtonTextModal: { color: '#fff', fontWeight: '900', letterSpacing: 1 }
+  cancelButton: { flex: 1, padding: 18, alignItems: 'center', justifyContent: 'center' },
+  cancelButtonText: { fontWeight: '900' }
 });

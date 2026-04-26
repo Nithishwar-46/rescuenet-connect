@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { TacticalButton } from '@/components/ui/tactical-button';
 
 const CACHE_KEY_ALERTS = 'rescuenet_map_alerts';
 const CACHE_KEY_UNITS = 'rescuenet_map_units';
@@ -25,8 +26,20 @@ const EXPERTISE_FILTERS = [
 
 const EMERGENCY_RED = '#ff4d4d';
 
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = (lat2-lat1) * (Math.PI/180);
+  var dLon = (lon2-lon1) * (Math.PI/180);
+  var a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c; 
+}
+
 export default function MapScreen() {
-  const { userId } = useAuth();
+  const { userId, profile: authProfile } = useAuth();
   const { colors } = useTheme();
   const webViewRef = useRef<WebView>(null);
   
@@ -96,11 +109,30 @@ export default function MapScreen() {
       }
     })();
 
-    const fetchAlerts = async () => {
+    const fetchAlerts = async (loc?: Location.LocationObject) => {
+       const userLoc = loc || currentLocation;
        const { data, error } = await supabase.from('sos_alerts').select('*').eq('status', 'active');
        if (data && !error) {
-         setAlerts(data || []);
-         await AsyncStorage.setItem(CACHE_KEY_ALERTS, JSON.stringify(data));
+         let filtered = data;
+         if (userLoc) {
+            filtered = filtered.filter(a => {
+               if (a.user_id === userId) return true;
+               const dist = getDistanceFromLatLonInKm(userLoc.coords.latitude, userLoc.coords.longitude, a.latitude, a.longitude);
+               return dist <= 25;
+            });
+         }
+         if (authProfile) {
+            filtered = filtered.filter(a => {
+               if (a.user_id === userId) return true;
+               if (a.target_expertise !== 'all' && (authProfile as any).role !== 'admin') {
+                  const hasSkill = (authProfile as any).expertise?.includes(a.target_expertise);
+                  if (!hasSkill) return false;
+               }
+               return true;
+            });
+         }
+         setAlerts(filtered);
+         await AsyncStorage.setItem(CACHE_KEY_ALERTS, JSON.stringify(filtered));
        }
     };
     fetchAlerts();
@@ -135,7 +167,7 @@ export default function MapScreen() {
       supabase.removeChannel(sosSubscription);
       supabase.removeChannel(locSubscription);
     };
-  }, [userId]);
+  }, [userId, authProfile, currentLocation]);
 
   const formatDistance = (dateString: string | null | undefined) => {
     if (!dateString) return 'NEVER';
@@ -206,12 +238,22 @@ export default function MapScreen() {
 
       if (!targetLat || !targetLng) return;
       setLoadingSOS(true);
+      let addressStr = '';
+      try {
+        const geocode = await Location.reverseGeocodeAsync({ latitude: targetLat, longitude: targetLng });
+        if (geocode.length > 0) {
+           const place = geocode[0];
+           addressStr = [place.name, place.street, place.city, place.region, place.country].filter(Boolean).join(', ');
+        }
+      } catch (e) {}
+      
+      const finalDetails = addressStr ? `Location: ${addressStr}\n\n${sosDetails || 'Urgent Assistance Needed'}` : (sosDetails || 'Urgent Assistance Needed');
 
       const { error } = await supabase.from('sos_alerts').insert([{
           user_id: userId,
           latitude: targetLat,
           longitude: targetLng,
-          details: sosDetails || 'Urgent Assistance Needed',
+          details: finalDetails,
           status: 'active',
           target_expertise: sosTargetExpertise
       }]);
@@ -434,9 +476,15 @@ export default function MapScreen() {
                  <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.border }]} onPress={() => setSosModalVisible(false)}>
                     <Text style={[styles.modalBtnText, { color: colors.text }]}>CANCEL</Text>
                  </TouchableOpacity>
-                 <TouchableOpacity style={[styles.modalBtn, { backgroundColor: EMERGENCY_RED }]} onPress={dispatchSOS} disabled={loadingSOS}>
-                    {loadingSOS ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>DISPATCH</Text>}
-                 </TouchableOpacity>
+                 <View style={{ flex: 1 }}>
+                    <TacticalButton
+                      title="DISPATCH"
+                      onPress={dispatchSOS}
+                      loading={loadingSOS}
+                      colors={[EMERGENCY_RED, '#cc0000']}
+                      style={{ height: '100%' }}
+                    />
+                 </View>
               </View>
            </View>
         </KeyboardAvoidingView>
@@ -477,9 +525,15 @@ export default function MapScreen() {
                  <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.border }]} onPress={() => setRequestModalVisible(false)}>
                     <Text style={[styles.modalBtnText, { color: colors.text }]}>CLOSE</Text>
                  </TouchableOpacity>
-                 <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.primary }]} onPress={handleResourceRequest} disabled={loadingSOS}>
-                    {loadingSOS ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>SEND</Text>}
-                 </TouchableOpacity>
+                 <View style={{ flex: 1 }}>
+                    <TacticalButton
+                      title="SEND"
+                      onPress={handleResourceRequest}
+                      loading={loadingSOS}
+                      colors={[colors.primary, '#005bb5']}
+                      style={{ height: '100%' }}
+                    />
+                 </View>
               </View>
            </View>
         </KeyboardAvoidingView>

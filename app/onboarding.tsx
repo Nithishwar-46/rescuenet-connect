@@ -4,8 +4,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useTheme } from '@/lib/theme-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { TacticalButton } from '@/components/ui/tactical-button';
 
 const EXPERTISE_TAGS = [
   { id: 'medical', label: 'Medical', icon: 'medkit' },
@@ -122,13 +123,14 @@ export default function OnboardingScreen() {
             </View>
           </View>
 
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.primary }]} 
-            onPress={handleCompleteOnboarding}
-            disabled={loading}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Complete Activation</Text>}
-          </TouchableOpacity>
+          <Animated.View layout={Layout.springify()} style={{ marginTop: 20 }}>
+            <TacticalButton
+              title="COMPLETE ACTIVATION"
+              onPress={handleCompleteOnboarding}
+              loading={loading}
+              colors={['#1a1a1a', '#000000']}
+            />
+          </Animated.View>
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -148,7 +150,5 @@ const styles = StyleSheet.create({
   input: { height: 60, borderRadius: 15, paddingHorizontal: 20, fontSize: 16, borderWidth: 1, fontWeight: '600' },
   expertiseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 5 },
   tag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, height: 45, borderRadius: 12, borderWidth: 1 },
-  tagText: { fontSize: 12, fontWeight: '800', marginLeft: 8 },
-  button: { height: 65, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginTop: 20, elevation: 5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 1 }
+  tagText: { fontSize: 12, fontWeight: '800', marginLeft: 8 }
 });

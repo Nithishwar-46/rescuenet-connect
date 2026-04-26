@@ -8,6 +8,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { decode } from 'base64-arraybuffer';
 import { useToast } from '@/lib/toast-provider';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { router } from 'expo-router';
+import { TacticalButton } from '@/components/ui/tactical-button';
 
 const EXPERTISE_TAGS = [
   { id: 'medical', label: 'Medical', icon: 'medkit' },
@@ -95,10 +97,10 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = () => {
-      supabase.auth.signOut().then(() => {
-        showToast({ message: "Session Terminated.", type: 'INFO' });
-      });
+  const handleLogout = async () => {
+      await supabase.auth.signOut();
+      showToast({ message: "Session Terminated.", type: 'INFO' });
+      router.replace('/');
   };
 
   const formatDistance = (dateString: string | null | undefined) => {
@@ -207,9 +209,14 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={updateProfile} disabled={loading}>
-                  <Text style={styles.saveButtonText}>Sync Agency Data</Text>
-                </TouchableOpacity>
+                <View style={{ marginTop: 25 }}>
+                  <TacticalButton
+                    title="SYNC AGENCY DATA"
+                    onPress={updateProfile}
+                    loading={loading}
+                    colors={['#1a1a1a', '#000000']}
+                  />
+                </View>
 
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                    <Ionicons name="log-out-outline" size={18} color="#ff4d4d" style={{marginRight: 8}} />
@@ -264,9 +271,13 @@ export default function ProfileScreen() {
                   </Animated.View>
                 )}
 
-                <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary, marginTop: 30 }]} onPress={() => setShowSettings(false)}>
-                  <Text style={styles.saveButtonText}>Apply Changes</Text>
-                </TouchableOpacity>
+                <View style={{ marginTop: 30 }}>
+                  <TacticalButton
+                    title="APPLY CHANGES"
+                    onPress={() => setShowSettings(false)}
+                    colors={['#1a1a1a', '#000000']}
+                  />
+                </View>
               </Animated.View>
             )}
           </>
@@ -298,8 +309,6 @@ const styles = StyleSheet.create({
   expertiseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
   tagText: { fontSize: 11, fontWeight: '800', marginLeft: 6 },
-  saveButton: { borderRadius: 18, padding: 20, alignItems: 'center', marginTop: 25, elevation: 4 },
-  saveButtonText: { color: '#ffffff', fontSize: 15, fontWeight: '900', letterSpacing: 0.5 },
   logoutButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 30, padding: 15 },
   logoutText: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
   

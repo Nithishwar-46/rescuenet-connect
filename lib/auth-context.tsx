@@ -18,7 +18,7 @@ interface AuthState {
     phone_contact?: string;
     last_seen?: string;
     custom_color?: string;
-  } | null;
+  } | null | undefined;
   loading: boolean;
   refreshProfile: () => Promise<void>;
 }
@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthState>({
   user: null,
   userId: null,
   role: null,
-  profile: null,
+  profile: undefined,
   loading: true,
   refreshProfile: async () => {},
 });
@@ -36,7 +36,7 @@ export const ADMIN_ACCESS_CODE = 'RESCUENET_ADMIN_2026';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
-  const [profile, setProfile] = useState<AuthState['profile']>(null);
+  const [profile, setProfile] = useState<AuthState['profile']>(undefined);
   const [loading, setLoading] = useState(true);
 
   // --- DEEP LINK HANDLING ---
@@ -85,9 +85,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           last_seen: data.last_seen,
           custom_color: data.custom_color,
         });
+      } else {
+        setProfile(null);
       }
     } catch (e) {
       console.warn('fetchProfile error:', e);
+      setProfile(null);
     }
   };
 

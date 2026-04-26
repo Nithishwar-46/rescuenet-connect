@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ADMIN_ACCESS_CODE } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-provider';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
+import { TacticalButton } from '@/components/ui/tactical-button';
 
 type RoleTab = 'social_worker' | 'admin';
 
@@ -139,13 +140,14 @@ export default function AuthScreen() {
             </Animated.View>
           )}
 
-          <TouchableOpacity 
-            style={styles.primaryButton}
-            onPress={handleAuth}
-            disabled={loading}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{isRegistering ? 'INITIALIZE UNIT' : 'ESTABLISH UPLINK'}</Text>}
-          </TouchableOpacity>
+          <View style={{ marginTop: 15 }}>
+            <TacticalButton
+              title={isRegistering ? 'INITIALIZE UNIT' : 'ESTABLISH UPLINK'}
+              onPress={handleAuth}
+              loading={loading}
+              colors={['#1a1a1a', '#000000']}
+            />
+          </View>
 
           <TouchableOpacity style={styles.backButton} onPress={() => setIsRegistering(!isRegistering)}>
             <Text style={styles.backButtonText}>{isRegistering ? 'Already registered? Uplink instead' : 'New unit? Request registration'}</Text>
@@ -198,18 +200,6 @@ const styles = StyleSheet.create({
   },
   inputIcon: { marginRight: 12 },
   input: { flex: 1, paddingVertical: 18, color: '#000000', fontSize: 16, fontWeight: '700' },
-  primaryButton: { 
-    backgroundColor: '#000000', 
-    borderRadius: 18, 
-    padding: 20, 
-    alignItems: 'center', 
-    marginTop: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5
-  },
-  buttonText: { color: '#ffffff', fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
   backButton: { marginTop: 20, alignItems: 'center' },
   backButtonText: { color: '#8a8a8a', fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
   footer: { marginTop: 40, alignItems: 'center' },

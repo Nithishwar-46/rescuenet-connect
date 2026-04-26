@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -13,10 +14,10 @@ function RootNavigation() {
   const segments = useSegments();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || (user && profile === undefined)) return;
 
     const inTabsGroup = segments[0] === '(tabs)';
-    const onAuthScreen = !segments[0] || segments[0] === 'index';
+    const onAuthScreen = !segments[0];
     const onOnboarding = segments[0] === 'onboarding';
 
     // 1. Not Logged In -> Forward to Login
@@ -37,6 +38,14 @@ function RootNavigation() {
       }
     }
   }, [user, profile, loading, segments]);
+
+  if (loading || (user && profile === undefined)) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#ff4d4d" />
+      </View>
+    );
+  }
 
   return (
     <Stack>
